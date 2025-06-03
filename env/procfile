@@ -1,0 +1,1 @@
+worker: python quiz_telegram_bot.py
