@@ -3,9 +3,10 @@ import requests
 import random
 import os
 from telegram import Update, BotCommand, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, ConversationHandler, MessageHandler,filters, CallbackQueryHandler
+from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes, ConversationHandler, MessageHandler,filters, CallbackQueryHandler
 
 api_key = os.getenv("API_KEY")
+
 class Fetch:
     def __init__(self, url: str, response:str, update: Update):
         self.url = url
@@ -282,10 +283,15 @@ async def go(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('You clicked Start')
 
+async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Game stooped. use /start to play again")
+    return ConversationHandler.END
 
-async def set_commands(applicaton: ApplicationBuilder):
+
+async def set_commands(applicaton: Application):
     await applicaton.bot.set_my_commands([
-        BotCommand('start', 'start the bot'),
+        BotCommand('start', 'starts the bot'),
+        BotCommand('stop', 'stops the bot'),
         BotCommand('go', 'Triggers go'),
         BotCommand('hello', 'say hello')
     ])
@@ -301,14 +307,17 @@ CHOOSE_CATEGORY, SET_DIFFICULTY, QUESTION_TYPE, GAME_START = range(4)
 user_choice = Game()
 
 conv_handler = ConversationHandler(
-    entry_points=[CommandHandler('start', user_choice.show_categories)],
+    entry_points=[CommandHandler('start', user_choice.show_categories),
+    ],
     states={
         CHOOSE_CATEGORY: [CallbackQueryHandler(user_choice.handle_category_selection)],
         SET_DIFFICULTY: [CallbackQueryHandler(user_choice.handle_difficulty)],
         QUESTION_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, user_choice.handle_question_type)],
         GAME_START: [CallbackQueryHandler(user_choice.handle_answer)],
     },
-    fallbacks=[]
+    fallbacks=[
+        CommandHandler('stop', stop)
+    ]
 )
 
 app.add_handler(CommandHandler('hello', hello))
